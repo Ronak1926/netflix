@@ -7,7 +7,7 @@ const AuthScreen = () => {
         <div className='hero-bg relative'>
             <header className='max-w-6xl mx-auto flex items-center justify-between p-4 pb-10'>
                 <img src="/netflix-logo.png" alt="logo" className='w-32 md:w-52' />
-                <Link to={"/login"} className='text-white bg-red-600 py-1 px-2 rounded'>
+                <Link to={"/login"} className='text-white bg-red-700 py-1 px-4 rounded hover:bg-red-600 transition-all'>
                     Sign In
                 </Link>
             </header>
@@ -96,7 +96,7 @@ const AuthScreen = () => {
 
                 </div>
             </div>
-            
+
             {/* separator */}
             <div className='h-2 w-full bg-[#232323]' aria-hidden="true" />
             {/* 3rd section */}
