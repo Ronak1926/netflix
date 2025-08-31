@@ -98,7 +98,7 @@ export async function getSearchHistory(req, res) {
 
 export async function removeItemFromSearchHistory(req,res){
     let {id} = req.params;
-    id = parseInt(id);
+    id = parseInt(id); // we need to parse this because in the db the id is in the int type
     try {
         await User.findByIdAndUpdate(req.user._id, {
             $pull:{
