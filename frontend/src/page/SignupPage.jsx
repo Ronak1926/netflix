@@ -1,14 +1,19 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {ChevronRight} from 'lucide-react'
+import { useAuthStore } from '../store/authUser'
 const SignupPage = () => {
-  const [email,setEmail] = useState("")
+  const {searchParams}=new URL(document.location)
+  const emailValue = searchParams.get("email")
+
+  const [email,setEmail] = useState(emailValue || "")
   const [username,setUserName] = useState("")
   const [password,setPassword] = useState("")
 
+  const {signup} = useAuthStore()
   const handleSignUp = (e) =>{
     e.preventDefault()
-    console.log(email,password,username)
+    signup({email, username, password})
   }
   return (
     <div className='h-screen w-full hero-bg'>
