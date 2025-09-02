@@ -7,7 +7,6 @@ const HomeScreen = () => {
     return (
         <div>
             Homescreen
-
             <button onClick={logout}>logout</button>
         </div>
     )

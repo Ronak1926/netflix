@@ -7,6 +7,7 @@ export const useAuthStore = create((set) => ({
     isSigningUp: false,
     isCheckingAuth:true,
     isLoggingOut:false,
+    isLoggingIn:false,
     signup: async (credentials) => {
         set({ isSigningUp: true })
         try {
@@ -14,12 +15,20 @@ export const useAuthStore = create((set) => ({
             set({ user: response.data.user,isSigningUp: false })
             toast.success("Account created successfully")
         } catch (error) {
-            toast.error(error.response.data.message || "An error occured") // comes from backend check
+            toast.error(error.response.data.message || "Signin Failed") // comes from backend check
             set({isSigningUp:false,user:null})
         }
     },
-    login: async () => {
-
+    login: async (credentials) => {
+        set({isLoggingIn:true})
+        try {
+            const response = await axios.post("/api/v1/auth/login",credentials)
+            set({user:response.data.user,isLoggingIn:false})
+            toast.success("Logged in successfully")
+        } catch (error) {
+            set({isLoggingIn:false, user:null})
+            toast.error(error.response.data.message || "Login Falied")
+        }
     },
     logout: async () => {
         set({isLoggingOut:true})
@@ -39,7 +48,6 @@ export const useAuthStore = create((set) => ({
             set({user:response.data.user, isCheckingAuth:false})
         } catch (error) {
             set({isCheckingAuth:false, user:null})
-    
         }
     },
 }))
