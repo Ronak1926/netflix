@@ -23,7 +23,7 @@ const HomeScreen = () => {
         <>
             <div className='relative h-screen text-white'>
                 <Navbar />
-
+                {/* An Ui optimization while loading the image  */}
                 {imgLoading && (
                     <div className='absolute top-0 left-0 w-full h-full bg-black/70 flex items-center justify-center shimmer -z-10' />
                 )}
@@ -31,7 +31,7 @@ const HomeScreen = () => {
                 <img src={ORIGINAL_IMG_BASE_URL + trendingContent?.backdrop_path} alt="Hero img" className='absolute top-0 left-0 w-full h-full object-cover -z-50' onLoad={() => {
                     setImgLoading(false);
                 }} />
-                
+
                 <div className='absolute top-0 left-0 w-full h-full bg-black/50 -z-50' aria-hidden="true" />
 
                 <div className='absolute top-0 left-0 w-full h-full flex flex-col justify-center px-8 md:px-16 lg:px-32'>
