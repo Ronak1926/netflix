@@ -4,16 +4,20 @@ import { useContentStore } from "../store/content";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import ReactPlayer from "react-player";
 import { ORIGINAL_IMG_BASE_URL, SMALL_IMG_BASE_URL } from "../utils/constants";
 import { formatReleaseDate } from "../utils/dateFunction.js";
 import WatchPageSkeleton from "../components/skeletons/WatchPageSkeleton";
+
+// Ensure cookies (jwt-netflix) are sent with API requests to protected routes
+axios.defaults.withCredentials = true;
 
 const WatchPage = () => {
 	const { id } = useParams();
 	const [trailers, setTrailers] = useState([]);
 	const [currentTrailerIdx, setCurrentTrailerIdx] = useState(0);
 	const [loading, setLoading] = useState(true);
+	const [playerError, setPlayerError] = useState(false);
+	const [shouldPlay, setShouldPlay] = useState(false);
 	const [content, setContent] = useState({});
 	const [similarContent, setSimilarContent] = useState([]);
 	const { contentType } = useContentStore();
@@ -22,18 +26,71 @@ const WatchPage = () => {
 
 	useEffect(() => {
 		const getTrailers = async () => {
+			// Helper to fetch trailers for a given type and filter to playable YouTube items
+			const fetchForType = async (type) => {
+				const res = await axios.get(`/api/v1/${type}/${id}/trailers`);
+				const items = res.data?.trailers || [];
+				// Base set: YouTube videos with a key
+				let youTubeVideos = items.filter((t) => t.site === "YouTube" && t.key);
+				if (!youTubeVideos.length) return [];
+
+				// Avoid likely age-restricted videos such as "Red Band" first
+				const isRedBand = (t) => /red\s*band/i.test(t.name || "");
+				const isOfficial = (t) => /official/i.test(t.name || "") || t.official === true;
+				const isTrailerType = (t) => t.type === "Trailer";
+				const isTeaserType = (t) => t.type === "Teaser";
+
+				// Score videos to prefer: non-red-band > trailer > official > teaser > others
+				youTubeVideos = youTubeVideos.sort((a, b) => {
+					const score = (t) => (
+						(isRedBand(t) ? 0 : 4) +
+						(isTrailerType(t) ? 3 : 0) +
+						(isOfficial(t) ? 2 : 0) +
+						(isTeaserType(t) ? 1 : 0)
+					);
+					return score(b) - score(a);
+				});
+
+				return youTubeVideos;
+			};
+
 			try {
-				const res = await axios.get(`/api/v1/${contentType}/${id}/trailers`);
-				setTrailers(res.data.trailers);
-			} catch (error) {
-				if (error.message.includes("404")) {
-					setTrailers([]);
+				let primaryType = contentType === "movie" || contentType === "tv" ? contentType : "movie";
+				let secondaryType = primaryType === "movie" ? "tv" : "movie";
+
+				let filtered = [];
+				try {
+					filtered = await fetchForType(primaryType);
+				} catch (e) {
+					filtered = [];
 				}
+
+				// Fallback to the other type if nothing playable was found or first call failed
+				if (!filtered.length) {
+					try {
+						filtered = await fetchForType(secondaryType);
+					} catch (e) {
+						filtered = [];
+					}
+				}
+
+				setTrailers(filtered);
+				setPlayerError(false);
+				console.log("trailers fetched", filtered)
+				setCurrentTrailerIdx(0);
+			} catch (error) {
+				setTrailers([]);
 			}
 		};
 
 		getTrailers();
 	}, [contentType, id]);
+
+	// Reset playback/error state when trailer changes or content changes
+	useEffect(() => {
+		setPlayerError(false);
+		setShouldPlay(false);
+	}, [currentTrailerIdx, id, contentType]);
 
 	useEffect(() => {
 		const getSimilarContent = async () => {
@@ -136,12 +193,14 @@ const WatchPage = () => {
 
 				<div className='aspect-video mb-8 p-2 sm:px-10 md:px-32'>
 					{trailers.length > 0 && (
-						<ReactPlayer
-							controls={true}
-							width={"100%"}
-							height={"70vh"}
+						<iframe
+							title={`YouTube trailer ${trailers[currentTrailerIdx].key}`}
 							className='mx-auto overflow-hidden rounded-lg'
-							url={`https://www.youtube.com/watch?v=${trailers[currentTrailerIdx].key}`}
+							style={{ width: '100%', height: '70vh', border: 0 }}
+							src={`https://www.youtube-nocookie.com/embed/${trailers[currentTrailerIdx].key}?playsinline=1&rel=0&modestbranding=1&origin=${typeof window !== 'undefined' ? encodeURIComponent(window.location.origin) : ''}`}
+							allow='fullscreen; encrypted-media; picture-in-picture'
+							allowFullScreen
+							referrerPolicy='strict-origin-when-cross-origin'
 						/>
 					)}
 
@@ -150,6 +209,20 @@ const WatchPage = () => {
 							No trailers available for{" "}
 							<span className='font-bold text-red-600'>{content?.title || content?.name}</span> 😥
 						</h2>
+					)}
+
+					{playerError && trailers.length > 0 && (
+						<div className='text-center mt-4'>
+							<p className='mb-2'>Playback is blocked for this trailer. You can watch it directly on YouTube:</p>
+							<a
+								className='text-red-500 underline'
+								target='_blank'
+								rel='noreferrer'
+								href={`https://www.youtube.com/watch?v=${trailers[currentTrailerIdx].key}`}
+							>
+								Open on YouTube
+							</a>
+						</div>
 					)}
 				</div>
 
