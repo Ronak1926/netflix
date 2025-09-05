@@ -23,6 +23,7 @@ const SearchPage = () => {
 	const handleSearch = async (e) => {
 		e.preventDefault();
 		try {
+            setSearchTerm("")
 			const res = await axios.get(`/api/v1/search/${activeTab}/${searchTerm}`);
 			setResults(res.data.content);
 		} catch (error) {
