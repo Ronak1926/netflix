@@ -7,7 +7,7 @@ export default defineConfig({
   server:{
     proxy:{
       "/api":{
-        target:"http://localhost:5000",
+        target:"https://netflix-backend-wjiw.onrender.com",
       }// it set the proxy before the /api as localhost:5000 as the front base url
     }
   }
